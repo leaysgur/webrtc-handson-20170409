@@ -6,12 +6,7 @@ window.startVideo = () => {
     audio: true,
   })
     .then(stream => {
-      playVideo(localVideo, stream);
+      localVideo.srcObject = stream;
     })
     .catch(console.error);
-
-
-  function playVideo(el, stream) {
-    el.srcObject = stream;
-  }
 };

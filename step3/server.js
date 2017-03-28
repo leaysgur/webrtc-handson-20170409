@@ -1,7 +1,7 @@
 const ws = require('ws');
-const port = 3001;
+const port = process.argv[2] || 3001;
+
 const wsServer = new ws.Server({ port: port });
-console.log('websocket server start. port=' + port);
 
 wsServer.on('connection', ws => {
     console.log('-- websocket connected --');
@@ -16,3 +16,5 @@ wsServer.on('connection', ws => {
       });
     });
 });
+
+console.log('websocket server start. port=' + port);
