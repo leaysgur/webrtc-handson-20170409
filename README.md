@@ -17,7 +17,5 @@
 
 ## Note
 - `onnegotiationneeded`がFirefoxで発火しない
-- `onaddstream`もFirefoxにはない
-
-現状、Chromeでしか動かないコードになってる。
+- `onaddstream`はFirefoxでdepricated（というかChromeの実装が追いついてない）
 
