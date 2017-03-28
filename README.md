@@ -5,9 +5,9 @@
 - ただし、コードの内容が違ったり、シンタックスが違ったりする
   - 目的のために必要なことしか記述しない
   - ES2015の新しいシンタックス
-  - 最新のブラウザの実装
-    - 'srcObject'
-    - `webkitRTCPeerConnection` -> `RTCPeerConnection`
+  - 最新のブラウザの実装で
+    - `srcObject`だけを使う
+    - `webkitRTCPeerConnection` -> `RTCPeerConnection`でOK
 
 ## Purpose
 - step1: `getUserMedia()`を使ってローカルのカメラのストリームを得る
@@ -16,6 +16,6 @@
 - step4: step3で用意したサーバーを使って、Trickle ICE方式でP2P通信する
 
 ## Note
-- `onnegotiationneeded`がFirefoxで発火しない
-- `onaddstream`はFirefoxでdepricated（というかChromeの実装が追いついてない）
+- `negotiationneeded`イベントはFirefoxで発火しない
+- `addstream`イベントはFirefoxでdepricated（というかChromeの実装が古い）
 
