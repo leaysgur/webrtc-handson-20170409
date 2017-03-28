@@ -1,6 +1,5 @@
 let peerConnection = null;
 let ws = null;
-const textToReceiveSdp = document.getElementById('text_for_receive_sdp');
 
 window.startVideo = () => {
   const localVideo = document.getElementById('local_video');
@@ -85,10 +84,6 @@ function _prepareNewConnection(localStream) {
 }
 
 function _sendSdp(sessionDescription) {
-  const textForSendSdp = document.getElementById('text_for_send_sdp');
-  console.log('---sending sdp ---');
-  textForSendSdp.value = sessionDescription.sdp;
-
    const message = JSON.stringify(sessionDescription);
    console.log('sending SDP=' + sessionDescription);
    ws.send(message);
@@ -104,14 +99,10 @@ function _initWs() {
     console.log('ws onmessage() data:', message);
 
     if (message.type === 'offer') {
-      textToReceiveSdp.value = message.sdp;
-
       const offer = new RTCSessionDescription(message);
       _setOffer(offer);
     }
     else if (message.type === 'answer') {
-      textToReceiveSdp.value = message.sdp;
-
       const answer = new RTCSessionDescription(message);
       _setAnswer(answer);
     }

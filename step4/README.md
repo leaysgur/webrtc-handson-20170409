@@ -5,4 +5,5 @@ Step2のコードを改変し、WebSocketでSDPの交換（シグナリング）
 Connectボタンを押すだけでつながる。
 
 - 手動シグナリングではなく、WebSocketサーバーを使ったものに
-- Vanilla ICEからTrickle ICEへ
+  - Vanilla ICEからTrickle ICEへ
+  - コピペしなくてもいいので、テキストエリアも不要に
