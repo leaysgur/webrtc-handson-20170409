@@ -1,4 +1,3 @@
-let localStream = null;
 let peerConnection = null;
 
 window.startVideo = () => {
@@ -10,97 +9,69 @@ window.startVideo = () => {
   })
     .then(stream => {
       localVideo.srcObject = stream;
-      localStream = stream;
+      peerConnection = _prepareNewConnection(stream);
     })
     .catch(console.error);
 };
 
 window.connect = () => {
-  if (localStream === null) {
-    console.warn('local stream not exist.');
-    return;
-  }
-  if (peerConnection) {
-    console.warn('peer already exist.');
+  if (peerConnection === null) {
+    console.warn('peerConnection is not exist.');
     return;
   }
 
   console.log('make Offer');
-  peerConnection = _prepareNewConnection();
-  peerConnection.onnegotiationneeded = () => {
-    peerConnection.createOffer()
-      .then(sessionDescription => {
-        console.log('createOffer() succsess in promise');
-        peerConnection.setLocalDescription(sessionDescription);
-      })
-      .then(() => {
-        console.log('setLocalDescription() succsess in promise');
-      })
-      .catch(console.error);
-  };
-
+  peerConnection.createOffer()
+    .then(sessionDesc => peerConnection.setLocalDescription(sessionDesc))
+    .catch(console.error);
 };
 
 window.onSdpText = () => {
+  if (peerConnection === null) {
+    console.warn('peer connection does not exist.');
+    return;
+  }
+
   const textToReceiveSdp = document.getElementById('text_for_receive_sdp');
   const text = textToReceiveSdp.value;
 
-  if (peerConnection) {
-    // Offerした側が相手からのAnswerをセットする場合
-    console.log('Received answer text...');
-    const answer = new RTCSessionDescription({
-      type: 'answer',
-      sdp: text,
-    });
-    setAnswer(answer);
-  }
-  else {
-    if (localStream === null) {
-      console.warn('local stream not exist.');
-      return;
-    }
+  const isAnswerSide = peerConnection.signalingState === 'stable';
 
+  if (isAnswerSide) {
     // Offerを受けた側が相手からのOfferをセットする場合
     console.log('Received offer text...');
-    const offer = new RTCSessionDescription({
-      type: 'offer',
-      sdp: text,
-    });
-    setOffer(offer);
+    setOffer(text);
+  }
+  else {
+    // Offerした側が相手からのAnswerをセットする場合
+    console.log('Received answer text...');
+    setAnswer(text);
   }
 
   textToReceiveSdp.value = '';
 
 
-  function setAnswer(sessionDescription) {
-    peerConnection.setRemoteDescription(sessionDescription)
-      .then(() => {
-        console.log('setRemoteDescription(answer) succsess in promise');
-      })
+  function setAnswer(sdp) {
+    const sessionDesc = new RTCSessionDescription({
+      type: 'answer',
+      sdp: sdp,
+    });
+    peerConnection.setRemoteDescription(sessionDesc)
       .catch(console.error);
   }
 
-  function setOffer(sessionDescription) {
-    peerConnection = _prepareNewConnection();
-    peerConnection.onnegotiationneeded = () => {
-      peerConnection.setRemoteDescription(sessionDescription)
-        .then(function() {
-          console.log('setRemoteDescription(offer) succsess in promise');
-          _makeAnswer();
-        })
-        .catch(console.error);
-    };
-  }
-
-  function _makeAnswer() {
-    console.log('sending Answer. Creating remote session description...' );
-    peerConnection.createAnswer()
-      .then(sessionDescription => {
-        console.log('createAnswer() succsess in promise');
-        peerConnection.setLocalDescription(sessionDescription);
-      })
+  function setOffer(sdp) {
+    const sessionDesc = new RTCSessionDescription({
+      type: 'offer',
+      sdp: sdp,
+    });
+    peerConnection.setRemoteDescription(sessionDesc)
       .then(() => {
-        console.log('setLocalDescription() succsess in promise');
+        return peerConnection.createAnswer()
+          .then(sessionDesc => {
+            console.log('createAnswer() succsess in promise');
+            return peerConnection.setLocalDescription(sessionDesc);
+          });
       })
       .catch(console.error);
   }
@@ -119,7 +90,7 @@ window.hangUp = () => {
   }
 };
 
-function _prepareNewConnection() {
+function _prepareNewConnection(localStream) {
   const remoteVideo = document.getElementById('remote_video');
 
   // RTCPeerConnectionを初期化する
@@ -135,7 +106,7 @@ function _prepareNewConnection() {
   // ICE Candidateを収集したときのイベント
   peer.onicecandidate = ev => {
     if (ev.candidate) {
-      console.log(ev.candidate);
+      console.log('skip candidate', ev.candidate);
       return;
     }
 
@@ -157,10 +128,10 @@ function _prepareNewConnection() {
   return peer;
 
 
-  function __sendSdp(sessionDescription) {
+  function __sendSdp(sessionDesc) {
     const textForSendSdp = document.getElementById('text_for_send_sdp');
     console.log('---sending sdp ---');
-    textForSendSdp.value = sessionDescription.sdp;
+    textForSendSdp.value = sessionDesc.sdp;
     textForSendSdp.focus();
     textForSendSdp.select();
   }
