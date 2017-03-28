@@ -98,10 +98,17 @@ function _prepareNewConnection(localStream) {
     iceServers:[ { urls: 'stun:stun.skyway.io:3478' } ],
   });
 
-  peer.onaddstream = ev => {
-    console.log('-- peer.onaddstream()');
-    remoteVideo.srcObject = ev.stream;
-  };
+  if ('ontrack' in peer) {
+    peer.ontrack = ev => {
+      console.log('-- peer.ontrack()');
+      remoteVideo.srcObject = ev.streams[0];
+    };
+  } else {
+    peer.onaddstream = ev => {
+      console.log('-- peer.onaddstream()');
+      remoteVideo.srcObject = ev.stream;
+    };
+  }
 
   // ICE Candidateを収集したときのイベント
   peer.onicecandidate = ev => {
