@@ -1,4 +1,3 @@
-let localStream = null;
 let peerConnection = null;
 let ws = null;
 const textToReceiveSdp = document.getElementById('text_for_receive_sdp');
@@ -12,37 +11,27 @@ window.startVideo = () => {
   })
     .then(stream => {
       localVideo.srcObject = stream;
-      localStream = stream;
 
+      peerConnection = _prepareNewConnection(stream);
       _initWs();
     })
     .catch(console.error);
 };
 
 window.connect = () => {
-  if (localStream === null) {
-    console.warn('local stream not exist.');
-    return;
-  }
-  if (peerConnection) {
-    console.warn('peer already exist.');
+  if (peerConnection === null) {
+    console.warn('peerConnection is not exist.');
     return;
   }
 
   console.log('make Offer');
-  peerConnection = _prepareNewConnection();
-  peerConnection.onnegotiationneeded = () => {
-    peerConnection.createOffer()
-      .then(sessionDescription => {
-        console.log('createOffer() succsess in promise');
-        peerConnection.setLocalDescription(sessionDescription);
-      })
-      .then(() => {
-        console.log('setLocalDescription() succsess in promise');
-        _sendSdp(peerConnection.localDescription);
-      })
-      .catch(console.error);
-  };
+  peerConnection.createOffer()
+    .then(sessionDesc => peerConnection.setLocalDescription(sessionDesc))
+    .then(() => {
+      console.log('setLocalDescription() succsess in promise');
+      _sendSdp(peerConnection.localDescription);
+    })
+    .catch(console.error);
 };
 
 window.hangUp = () => {
@@ -59,7 +48,7 @@ window.hangUp = () => {
   }
 };
 
-function _prepareNewConnection() {
+function _prepareNewConnection(localStream) {
   const remoteVideo = document.getElementById('remote_video');
 
   // RTCPeerConnectionを初期化する
@@ -115,40 +104,24 @@ function _initWs() {
     console.log('ws onmessage() data:', message);
 
     if (message.type === 'offer') {
-      // offer 受信時
-      console.log('Received offer ...');
       textToReceiveSdp.value = message.sdp;
 
       const offer = new RTCSessionDescription(message);
       _setOffer(offer);
     }
     else if (message.type === 'answer') {
-      // answer 受信時
-      console.log('Received answer ...');
       textToReceiveSdp.value = message.sdp;
 
       const answer = new RTCSessionDescription(message);
       _setAnswer(answer);
     }
     else if (message.type === 'candidate') {
-      // ICE candidate 受信時
-      console.log('Received ICE candidate ...');
-
       const candidate = new RTCIceCandidate(message.ice);
-      _addIceCandidate(candidate);
+      peerConnection.addIceCandidate(candidate)
+        .catch(console.error);
     }
     else if (message.type === 'close') {
       window.hangUp();
-    }
-
-    function _addIceCandidate(candidate) {
-      if (!peerConnection) {
-        console.error('PeerConnection not exist!');
-        return;
-      }
-
-      peerConnection.addIceCandidate(candidate)
-        .catch(console.error);
     }
 
     function _setAnswer(sessionDescription) {
@@ -160,29 +133,19 @@ function _initWs() {
     }
 
     function _setOffer(sessionDescription) {
-      peerConnection = _prepareNewConnection();
-      peerConnection.onnegotiationneeded = () => {
-        peerConnection.setRemoteDescription(sessionDescription)
-          .then(function() {
-            console.log('setRemoteDescription(offer) succsess in promise');
-            __makeAnswer();
-          })
-          .catch(console.error);
-      };
-
-      function __makeAnswer() {
-        console.log('sending Answer. Creating remote session description...' );
-        peerConnection.createAnswer()
-          .then(sessionDescription => {
-            console.log('createAnswer() succsess in promise');
-            peerConnection.setLocalDescription(sessionDescription);
-          })
-          .then(() => {
-            console.log('setLocalDescription() succsess in promise');
-            _sendSdp(peerConnection.localDescription);
-          })
-          .catch(console.error);
-      }
+      peerConnection.setRemoteDescription(sessionDescription)
+        .then(() => {
+          return peerConnection.createAnswer()
+            .then(sessionDescription => {
+              console.log('createAnswer() succsess in promise');
+              peerConnection.setLocalDescription(sessionDescription);
+            })
+            .then(() => {
+              console.log('setLocalDescription() succsess in promise');
+              _sendSdp(peerConnection.localDescription);
+            });
+        })
+        .catch(console.error);
     }
   };
 }
