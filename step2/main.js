@@ -12,6 +12,61 @@ window.startVideo = () => {
       peerConnection = _prepareNewConnection(stream);
     })
     .catch(console.error);
+
+
+  function _prepareNewConnection(localStream) {
+    const remoteVideo = document.getElementById('remote_video');
+
+    // RTCPeerConnectionを初期化する
+    const peer = new RTCPeerConnection({
+      iceServers:[ { urls: 'stun:stun.skyway.io:3478' } ],
+    });
+
+    if ('ontrack' in peer) {
+      peer.ontrack = ev => {
+        console.log('-- peer.ontrack()');
+        remoteVideo.srcObject = ev.streams[0];
+      };
+    } else {
+      peer.onaddstream = ev => {
+        console.log('-- peer.onaddstream()');
+        remoteVideo.srcObject = ev.stream;
+      };
+    }
+
+    // ICE Candidateを収集したときのイベント
+    peer.onicecandidate = ev => {
+      if (ev.candidate) {
+        console.log('skip candidate', ev.candidate);
+        return;
+      }
+
+      console.log('empty ice event');
+      __sendSdp(peer.localDescription);
+    };
+
+    peer.oniceconnectionstatechange = () => {
+      // ICEのステートが切断状態または異常状態になったら切断処理を実行する
+      if (peer.iceConnectionState === 'failed') {
+        window.hangUp();
+      }
+    };
+
+    // ローカルのストリームを利用できるように準備する
+    console.log('Adding local stream...');
+    peer.addStream(localStream);
+
+    return peer;
+
+
+    function __sendSdp(sessionDesc) {
+      const textForSendSdp = document.getElementById('text_for_send_sdp');
+      console.log('---sending sdp ---');
+      textForSendSdp.value = sessionDesc.sdp;
+      textForSendSdp.focus();
+      textForSendSdp.select();
+    }
+  }
 };
 
 window.connect = () => {
@@ -89,57 +144,3 @@ window.hangUp = () => {
     console.log('peerConnection is closed.');
   }
 };
-
-function _prepareNewConnection(localStream) {
-  const remoteVideo = document.getElementById('remote_video');
-
-  // RTCPeerConnectionを初期化する
-  const peer = new RTCPeerConnection({
-    iceServers:[ { urls: 'stun:stun.skyway.io:3478' } ],
-  });
-
-  if ('ontrack' in peer) {
-    peer.ontrack = ev => {
-      console.log('-- peer.ontrack()');
-      remoteVideo.srcObject = ev.streams[0];
-    };
-  } else {
-    peer.onaddstream = ev => {
-      console.log('-- peer.onaddstream()');
-      remoteVideo.srcObject = ev.stream;
-    };
-  }
-
-  // ICE Candidateを収集したときのイベント
-  peer.onicecandidate = ev => {
-    if (ev.candidate) {
-      console.log('skip candidate', ev.candidate);
-      return;
-    }
-
-    console.log('empty ice event');
-    __sendSdp(peer.localDescription);
-  };
-
-  peer.oniceconnectionstatechange = () => {
-    // ICEのステートが切断状態または異常状態になったら切断処理を実行する
-    if (peer.iceConnectionState === 'failed') {
-      window.hangUp();
-    }
-  };
-
-  // ローカルのストリームを利用できるように準備する
-  console.log('Adding local stream...');
-  peer.addStream(localStream);
-
-  return peer;
-
-
-  function __sendSdp(sessionDesc) {
-    const textForSendSdp = document.getElementById('text_for_send_sdp');
-    console.log('---sending sdp ---');
-    textForSendSdp.value = sessionDesc.sdp;
-    textForSendSdp.focus();
-    textForSendSdp.select();
-  }
-}
