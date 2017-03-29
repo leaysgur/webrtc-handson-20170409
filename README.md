@@ -8,6 +8,7 @@
   - 最新のブラウザの実装で
     - `srcObject`だけを使う
     - `webkitRTCPeerConnection` -> `RTCPeerConnection`でOK
+- ChromeとFirefoxで動く
 
 ## Purpose
 - step1: `getUserMedia()`を使ってローカルのカメラのストリームを得る

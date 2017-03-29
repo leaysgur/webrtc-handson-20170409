@@ -41,7 +41,6 @@ window.startVideo = () => {
         return;
       }
 
-      console.log('empty ice event');
       __sendSdp(peer.localDescription);
     };
 
@@ -53,7 +52,7 @@ window.startVideo = () => {
     };
 
     // ローカルのストリームを利用できるように準備する
-    console.log('Adding local stream...');
+    console.log('Add local stream');
     peer.addStream(localStream);
 
     return peer;
@@ -123,10 +122,7 @@ window.onSdpText = () => {
     peerConnection.setRemoteDescription(sessionDesc)
       .then(() => {
         return peerConnection.createAnswer()
-          .then(sessionDesc => {
-            console.log('createAnswer() succsess in promise');
-            return peerConnection.setLocalDescription(sessionDesc);
-          });
+          .then(sessionDesc => peerConnection.setLocalDescription(sessionDesc));
       })
       .catch(console.error);
   }

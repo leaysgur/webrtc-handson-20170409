@@ -12,7 +12,7 @@ window.startVideo = () => {
       localVideo.srcObject = stream;
 
       peerConnection = _prepareNewConnection(stream);
-      _initWs();
+      ws = _prepareWebSocket();
     })
     .catch(console.error);
 
@@ -40,8 +40,9 @@ window.startVideo = () => {
     // ICE Candidateを収集したときのイベント
     peer.onicecandidate = ev => {
       if (ev.candidate) {
+        console.log('send candidate', ev.candidate);
+
         const message = JSON.stringify({ type: 'candidate', ice: ev.candidate });
-        console.log('sending candidate=' + message);
         ws.send(message);
       }
     };
@@ -53,8 +54,7 @@ window.startVideo = () => {
       }
     };
 
-    // ローカルのストリームを利用できるように準備する
-    console.log('Adding local stream...');
+    console.log('Add local stream');
     peer.addStream(localStream);
 
     return peer;
@@ -98,8 +98,8 @@ function _sendSdp(sessionDescription) {
    ws.send(message);
 }
 
-function _initWs() {
-  ws = new WebSocket('ws://localhost:3001/');
+function _prepareWebSocket() {
+  const ws = new WebSocket('ws://localhost:3001/');
 
   ws.onopen = () => console.log('ws open()');
   ws.onerror = err => console.error(err);
@@ -126,9 +126,6 @@ function _initWs() {
 
     function _setAnswer(sessionDescription) {
       peerConnection.setRemoteDescription(sessionDescription)
-        .then(() => {
-          console.log('setRemoteDescription(answer) succsess in promise');
-        })
         .catch(console.error);
     }
 
@@ -136,12 +133,8 @@ function _initWs() {
       peerConnection.setRemoteDescription(sessionDescription)
         .then(() => {
           return peerConnection.createAnswer()
-            .then(sessionDescription => {
-              console.log('createAnswer() succsess in promise');
-              peerConnection.setLocalDescription(sessionDescription);
-            })
+            .then(sessionDesc => peerConnection.setLocalDescription(sessionDesc))
             .then(() => {
-              console.log('setLocalDescription() succsess in promise');
               // send answer
               _sendSdp(peerConnection.localDescription);
             });
@@ -149,4 +142,6 @@ function _initWs() {
         .catch(console.error);
     }
   };
+
+  return ws;
 }
